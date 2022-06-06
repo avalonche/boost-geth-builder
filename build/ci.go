@@ -1,3 +1,4 @@
+
 // Copyright 2016 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
@@ -243,6 +244,7 @@ func doInstall(cmdline []string) {
 		copy(args, gobuild.Args)
 		args = append(args, "-o", executablePath(path.Base(pkg)))
 		args = append(args, pkg)
+		fmt.Println(gobuild.Env)
 		build.MustRun(&exec.Cmd{Path: gobuild.Path, Args: args, Env: gobuild.Env})
 	}
 }

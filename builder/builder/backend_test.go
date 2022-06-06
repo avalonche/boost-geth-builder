@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/beacon"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/flashbots/go-boost-utils/bls"
 	boostTypes "github.com/flashbots/go-boost-utils/types"
@@ -32,7 +31,7 @@ func newTestBackend(t *testing.T) (*Backend, *ValidatorPrivateData) {
 	return backend, validator
 }
 
-func testRequest(t *testing.T, backend *Backend, method string, path string, payload any) *httptest.ResponseRecorder {
+func testRequest(t *testing.T, backend *Backend, method string, path string, payload interface{}) *httptest.ResponseRecorder {
 	var req *http.Request
 	var err error
 
@@ -120,7 +119,7 @@ func TestGetHeader(t *testing.T) {
 		ExtraData:     []byte{},
 		LogsBloom:     []byte{0x00, 0x05, 0x10},
 	}
-	forkchoiceBlock := &types.Block{
+	forkchoiceBlock := &Block{
 		Profit: big.NewInt(10),
 	}
 
@@ -172,7 +171,7 @@ func TestGetPayload(t *testing.T) {
 		BaseFeePerGas: big.NewInt(12),
 		ExtraData:     []byte{},
 	}
-	forkchoiceBlock := &types.Block{
+	forkchoiceBlock := &Block{
 		Profit: big.NewInt(10),
 	}
 
@@ -236,7 +235,7 @@ func TestGetPayload(t *testing.T) {
 func TestPayloadAttributes(t *testing.T) {
 	backend, validator := newTestBackend(t)
 
-	payloadAttributes := &beacon.PayloadAttributesV1{
+	payloadAttributes := &PayloadAttributes{
 		SuggestedFeeRecipient: common.Address{0x01},
 		GasLimit:              15_000_000,
 		Timestamp:             uint64(time.Now().Unix()),

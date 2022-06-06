@@ -24,6 +24,18 @@ import (
 
 type PubkeyHex string
 
+type Block struct {
+	*types.Block
+	Profit *big.Int
+}
+
+type PayloadAttributes struct {
+	Timestamp             uint64         `json:"timestamp"`
+	Random                common.Hash    `json:"prevRandao"`
+	SuggestedFeeRecipient common.Address `json:"suggestedFeeRecipient"`
+	GasLimit              uint64         `json:"gasLimit"`
+}
+
 type ValidatorData struct {
 	FeeRecipient boostTypes.Address `json:"feeRecipient"`
 	GasLimit     uint64             `json:"gasLimit"`
@@ -341,7 +353,7 @@ func (b *Backend) handleGetPayload(w http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Backend) handlePayloadAttributes(w http.ResponseWriter, req *http.Request) {
-	payloadAttributes := new(beacon.PayloadAttributesV1)
+	payloadAttributes := new(PayloadAttributes)
 	if err := json.NewDecoder(req.Body).Decode(&payloadAttributes); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid payload attributes")
 		return
@@ -407,7 +419,7 @@ func (b *Backend) handleSubmitBlock(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	b.validatorsLock.RUnlock()
-	
+
 	payload := executableDataToExecutionPayload(relayBlock.Block)
 	payloadHeader, err := payloadToPayloadHeader(payload, relayBlock.Block)
 	if err != nil {
@@ -423,7 +435,7 @@ func (b *Backend) handleSubmitBlock(w http.ResponseWriter, req *http.Request) {
 	b.bestDataLock.Unlock()
 }
 
-func (b *Backend) onForkchoice(payloadAttributes *beacon.PayloadAttributesV1) {
+func (b *Backend) onForkchoice(payloadAttributes *PayloadAttributes) {
 	dataJson, err := json.Marshal(payloadAttributes)
 	if err == nil {
 		log.Info("FCU", "data", string(dataJson))
@@ -445,7 +457,7 @@ func (b *Backend) onForkchoice(payloadAttributes *beacon.PayloadAttributesV1) {
 	}
 }
 
-func (b *Backend) newSealedBlock(data *beacon.ExecutableDataV1, block *types.Block) {
+func (b *Backend) newSealedBlock(data *beacon.ExecutableDataV1, block *Block) {
 	dataJson, err := json.Marshal(data)
 	if err == nil {
 		log.Info("newSealedBlock", "data", string(dataJson))

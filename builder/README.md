@@ -27,8 +27,6 @@ Builder API has two hooks into geth:
 
 ## Usage
 
-Configure geth for your network, it will become the block builder.
-
 Builder API options:
 ```
 $ geth --help

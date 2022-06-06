@@ -156,7 +156,7 @@ func fetchEpochProposersMap(endpoint string, epoch uint64) (map[uint64]PubkeyHex
 	return proposersMap, nil
 }
 
-func fetchBeacon(url string, dst any) error {
+func fetchBeacon(url string, dst interface{}) error {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Error("invalid request", "url", url, "err", err)

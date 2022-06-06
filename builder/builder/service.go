@@ -6,9 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
 	"github.com/gorilla/mux"
 
 	"github.com/flashbots/go-boost-utils/bls"
@@ -32,7 +30,7 @@ type Service struct {
 
 func (s *Service) Start() {
 	log.Info("Service started")
-	go s.srv.ListenAndServe()
+	s.srv.ListenAndServe()
 }
 
 func getRouter(backend *Backend) http.Handler {
@@ -77,7 +75,7 @@ type BuilderConfig struct {
 	BeaconEndpoint        string
 }
 
-func Register(stack *node.Node, backend *eth.Ethereum, cfg *BuilderConfig) error {
+func Start(cfg *BuilderConfig) error {
 	envSkBytes, err := hexutil.Decode(cfg.SecretKey)
 	if err != nil {
 		return errors.New("incorrect builder API secret key provided")
@@ -104,6 +102,7 @@ func Register(stack *node.Node, backend *eth.Ethereum, cfg *BuilderConfig) error
 
 	builderBackend := NewBackend(sk, beaconClient, builderSigningDomain, proposerSigningDomain, cfg.EnableValidatorChecks)
 	builderService := NewService(cfg.ListenAddr, builderBackend)
+
 	builderService.Start()
 
 	return nil
