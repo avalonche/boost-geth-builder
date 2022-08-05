@@ -41,7 +41,8 @@ func TestOnNewSealedBlock(t *testing.T) {
 
 	bDomain := boostTypes.ComputeDomain(boostTypes.DomainTypeAppBuilder, [4]byte{0x02, 0x0, 0x0, 0x0}, boostTypes.Hash{})
 
-	builder := NewBuilder(sk, &testBeacon, &testRelay, bDomain)
+	ticker := &SlotTicker{}
+	builder := NewBuilder(sk, &testBeacon, &testRelay, bDomain, ticker)
 
 	testExecutableData := &beacon.ExecutableDataV1{
 		ParentHash:   common.Hash{0x02, 0x03},

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -26,12 +27,17 @@ const (
 )
 
 type Service struct {
-	srv *http.Server
+	srv     *http.Server
+	builder *Builder
 }
 
 func (s *Service) Start() {
 	log.Info("Service started")
 	go s.srv.ListenAndServe()
+
+	secondsIntoSlot := 4 * time.Second
+	slotTime := 12
+	s.builder.ticker.Start(uint64(slotTime), secondsIntoSlot)
 }
 
 func getRouter(localRelay *LocalRelay) http.Handler {
@@ -49,7 +55,7 @@ func getRouter(localRelay *LocalRelay) http.Handler {
 	return loggedRouter
 }
 
-func NewService(listenAddr string, localRelay *LocalRelay) *Service {
+func NewService(listenAddr string, localRelay *LocalRelay, builder *Builder) *Service {
 	return &Service{
 		srv: &http.Server{
 			Addr:    listenAddr,
@@ -61,6 +67,7 @@ func NewService(listenAddr string, localRelay *LocalRelay) *Service {
 				IdleTimeout:
 			*/
 		},
+		builder: builder,
 	}
 }
 
@@ -128,8 +135,9 @@ func Register(stack *node.Node, backend *eth.Ethereum, cfg *BuilderConfig) error
 		relay = localRelay
 	}
 
-	builderBackend := NewBuilder(builderSk, beaconClient, relay, builderSigningDomain)
-	builderService := NewService(cfg.ListenAddr, localRelay)
+	ticker := NewSlotTicker(backend.BuildBlockHook, relay)
+	builderBackend := NewBuilder(builderSk, beaconClient, relay, builderSigningDomain, ticker)
+	builderService := NewService(cfg.ListenAddr, localRelay, builderBackend)
 	builderService.Start()
 
 	backend.SetSealedBlockHook(builderBackend.newSealedBlock)

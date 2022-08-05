@@ -28,7 +28,7 @@ func newTestBackend(t *testing.T) (*Builder, *LocalRelay, *ValidatorPrivateData)
 	cDomain := boostTypes.ComputeDomain(boostTypes.DomainTypeBeaconProposer, [4]byte{0x02, 0x0, 0x0, 0x0}, genesisValidatorsRoot)
 	beaconClient := &testBeaconClient{validator: validator}
 	localRelay := NewLocalRelay(sk, beaconClient, bDomain, cDomain, ForkData{}, true)
-	backend := NewBuilder(sk, beaconClient, localRelay, bDomain)
+	backend := NewBuilder(sk, beaconClient, localRelay, bDomain, &SlotTicker{})
 	// service := NewService("127.0.0.1:31545", backend)
 
 	return backend, localRelay, validator

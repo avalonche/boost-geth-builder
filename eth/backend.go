@@ -90,6 +90,7 @@ type Ethereum struct {
 
 	newSealedBlockHook func(*beaconTypes.ExecutableDataV1, *types.Block, *beaconTypes.PayloadAttributesV1)
 	forkchoiceHook     func(*beaconTypes.PayloadAttributesV1)
+	buildBlockHook     func(*beaconTypes.PayloadAttributesV1, common.Hash) error
 
 	APIBackend *EthAPIBackend
 
@@ -403,6 +404,17 @@ func (s *Ethereum) ForkchoiceHook(payloadAttributes *beaconTypes.PayloadAttribut
 	if s.forkchoiceHook != nil {
 		s.forkchoiceHook(payloadAttributes)
 	}
+}
+
+func (s *Ethereum) SetBuildBlockHook(buildBlockHook func(*beaconTypes.PayloadAttributesV1, common.Hash) error) {
+	s.buildBlockHook = buildBlockHook
+}
+
+func (s *Ethereum) BuildBlockHook(payloadAttributes *beaconTypes.PayloadAttributesV1, headBlockHash common.Hash) error {
+	if s.buildBlockHook != nil {
+		return s.buildBlockHook(payloadAttributes, headBlockHash)
+	}
+	return nil
 }
 
 // isLocalBlock checks whether the specified block is mined

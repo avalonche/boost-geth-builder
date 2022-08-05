@@ -39,15 +39,17 @@ import (
 // Register adds catalyst APIs to the full node.
 func Register(stack *node.Node, backend *eth.Ethereum) error {
 	log.Warn("Catalyst mode enabled", "protocol", "eth")
+	service := NewConsensusAPI(backend)
 	stack.RegisterAPIs([]rpc.API{
 		{
 			Namespace:     "engine",
 			Version:       "1.0",
-			Service:       NewConsensusAPI(backend),
+			Service:       service,
 			Public:        true,
 			Authenticated: true,
 		},
 	})
+	backend.SetBuildBlockHook(service.onBuildBlock)
 	return nil
 }
 
@@ -220,6 +222,28 @@ func (api *ConsensusAPI) ForkchoiceUpdatedV1(update beacon.ForkchoiceStateV1, pa
 		return valid(&id), nil
 	}
 	return valid(nil), nil
+}
+
+func (api *ConsensusAPI) onBuildBlock(payloadAttributes *beacon.PayloadAttributesV1, headBlockHash common.Hash) error {
+	// Create an empty block first which can be used as a fallback
+	empty, err := api.eth.Miner().GetSealingBlockSync(headBlockHash, payloadAttributes.Timestamp, payloadAttributes.SuggestedFeeRecipient, payloadAttributes.GasLimit, payloadAttributes.Random, true)
+	if err != nil {
+		log.Error("Failed to create empty sealing payload", "err", err)
+		return err
+	}
+	// Send a request to generate a full block in the background.
+	// The result can be obtained via the returned channel.
+	resCh, err := api.eth.Miner().GetSealingBlockAsync(headBlockHash, payloadAttributes.Timestamp, payloadAttributes.SuggestedFeeRecipient, payloadAttributes.GasLimit, payloadAttributes.Random, false)
+	if err != nil {
+		log.Error("Failed to create async sealing payload", "err", err)
+		return err
+	}
+	resultPayload := &payload{empty: empty, result: resCh}
+	go func() {
+		executableData, block := resultPayload.resolve()
+		api.eth.NewSealedBlock(executableData, block, payloadAttributes)
+	}()
+	return nil
 }
 
 // ExchangeTransitionConfigurationV1 checks the given configuration against

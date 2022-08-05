@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	_ "os"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/beacon"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -40,9 +41,11 @@ type Builder struct {
 	builderSecretKey     *bls.SecretKey
 	builderPublicKey     boostTypes.PublicKey
 	builderSigningDomain boostTypes.Domain
+
+	ticker *SlotTicker
 }
 
-func NewBuilder(sk *bls.SecretKey, bc IBeaconClient, relay IRelay, builderSigningDomain boostTypes.Domain) *Builder {
+func NewBuilder(sk *bls.SecretKey, bc IBeaconClient, relay IRelay, builderSigningDomain boostTypes.Domain, ticker *SlotTicker) *Builder {
 	pkBytes := bls.PublicKeyFromSecretKey(sk).Compress()
 	pk := boostTypes.PublicKey{}
 	pk.FromSlice(pkBytes)
@@ -59,6 +62,7 @@ func NewBuilder(sk *bls.SecretKey, bc IBeaconClient, relay IRelay, builderSignin
 		builderPublicKey: pk,
 
 		builderSigningDomain: builderSigningDomain,
+		ticker:               ticker,
 	}
 }
 
@@ -147,6 +151,8 @@ func (b *Builder) newSealedBlock(data *beacon.ExecutableDataV1, block *types.Blo
 		log.Error("could not submit block", "err", err)
 		return
 	}
+
+	b.ticker.c <- &BlockBuilderArgs{PayloadAttributes: payloadAttributes, HeadBlockHash: common.Hash(payload.BlockHash)}
 }
 
 func executableDataToExecutionPayload(data *beacon.ExecutableDataV1) (*boostTypes.ExecutionPayload, error) {
